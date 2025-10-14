@@ -1,0 +1,47 @@
+package com.pt.lab11p.ui.vm
+
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.pt.lab11p.ui.loadings.UiState
+import com.pt.lab11p.datos.Location
+import com.pt.lab11p.repositorios.LocationRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlin.random.Random
+
+class LocationDetailViewModel(
+    private val repo: LocationRepository,
+    savedStateHandle: SavedStateHandle
+) : ViewModel() {
+
+    private val locationId: Int = checkNotNull(savedStateHandle["id"])
+    private val _state = MutableStateFlow(UiState<Location>(isLoading = true))
+    val state = _state.asStateFlow()
+
+    init { load() }
+
+    private fun load() {
+        _state.value = UiState(isLoading = true)
+        viewModelScope.launch {
+            try {
+
+                delay(2000)
+
+                val roll = Random.nextInt(1, 11)
+                if (roll % 2 == 0) {
+                    val loc = repo.getLocationById(locationId)
+                    _state.value = UiState(isLoading = false, data = loc, hasError = false)
+                } else {
+                    _state.value = UiState(isLoading = false, data = null, hasError = true)
+                }
+            } catch (_: Exception) {
+                _state.value = UiState(isLoading = false, data = null, hasError = true)
+            }
+        }
+    }
+
+    fun retry() = load()
+}
